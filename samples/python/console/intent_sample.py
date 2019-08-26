@@ -25,12 +25,11 @@ speech_intent_key = ""
 speech_intent_service_region = ""
 speech_language_understanding_app_id = ""
 
-lu_intent_key = ""
+lu_intent_key = "275c1674cf9e484680a0e7500202abef"
 lu_intent_service_region = "eastus"
-lu_language_understanding_app_id = ""
+lu_language_understanding_app_id = "8468f0ba-5923-4ad3-9285-9c9e57ff921c"
 # Specify the path to a audio file containing speech (mono WAV / PCM with a sampling rate of 16
 # kHz).
-lampfilename = "TurnOnTheLamp.wav"
 
 
 def recognize_intent_once_from_mic():
@@ -96,7 +95,6 @@ def recognize_intent_once_async_from_mic():
         """
         result = evt.result
         print("Recognized: \"{}\" with intent id `{}`".format(result.text, result.intent_id))
-        nonlocal done
         done = True
 
     def canceled_callback(evt):
@@ -139,14 +137,13 @@ def recognize_intent_once_async_from_mic():
 
     # wait until recognition is complete
     while not done:
-        time.sleep(1)
+        time.sleep(5)
 
 
-def recognize_intent_continuous():
+def recognize_intent_continuous(audio_config):
     """performs one-shot intent recognition from input from an audio file"""
     # <IntentContinuousRecognitionWithFile>
     intent_config = speechsdk.SpeechConfig(subscription=lu_intent_key, region=lu_intent_service_region)
-    audio_config = speechsdk.audio.AudioConfig(use_default_microphone=True)
 
     # Set up the intent recognizer
     intent_recognizer = speechsdk.intent.IntentRecognizer(speech_config=intent_config, audio_config=audio_config)
@@ -191,10 +188,9 @@ def recognize_intent_continuous():
             "RECOGNIZED: {}\n\tText: {} (Reason: {})\n\tIntent Id: {}\n\tIntent JSON: {}".format(
                 evt, evt.result.text, evt.result.reason, evt.result.intent_id, evt.result.intent_json)))
 
+            #return evt.result.text, evt.result.intent_json
+
         # cancellation event
-
-
-
             intent_recognizer.canceled.connect(lambda evt: print("CANCELED: {} ({})".format(evt.cancellation_details, evt.reason)))
 
         # stop continuous recognition on session stopped, end of speech or canceled events
