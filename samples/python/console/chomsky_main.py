@@ -8,10 +8,10 @@ import intent_sample
 import platform
 
 import pyaudio
-import wave
-import pickle
+from dotenv import load_dotenv
 
-import time
+import http.client, urllib.parse, json, time, sys
+import os
 
 #record
 CHUNK = 1024
@@ -20,16 +20,20 @@ CHANNELS = 1
 RATE = 16000
 RECORD_SECONDS = 20
 
-# Set up the subscription info for the Language Understanding Service: Note that this is not the
-# same subscription as the one for the Speech Service. Replace with your own language understanding
-# subscription key and service region (e.g., "westus").
-speech_intent_key = ""
-speech_intent_service_region = ""
+
+
+load_dotenv()
+#LU_INTENT_KEY = os.getenv("LuisAppId")
+#LU_SERVICE_REGION = os.getenv("LuisAPIHostName")
+#LU_APP_ID = os.getenv("LuisAPIKey")
+
+speech_intent_key = os.getenv("SpeechServiceKey")
+speech_intent_service_region =os.getenv("SpeechRegion")
 speech_language_understanding_app_id = ""
 
-lu_intent_key = "275c1674cf9e484680a0e7500202abef"
+lu_intent_key = ""
 lu_intent_service_region = "eastus"
-lu_language_understanding_app_id = "8468f0ba-5923-4ad3-9285-9c9e57ff921c"
+lu_language_understanding_app_id = ""
 # Specify the path to a audio file containing speech (mono WAV / PCM with a sampling rate of 16
 # kHz).
 
@@ -61,6 +65,65 @@ def select():
     try:
         intent_recognizer = {}
 
+        def analyzeResponse(answers):
+            print("Response")
+
+            possible_answers = []
+            for a in answers['answers']:
+                possible_answers.append(a['answer'])
+            for p in possible_answers:
+                #found it in the model we have, so ...
+                print(p)
+            # select top or random?
+            return "test answer"
+
+        def getResponse(text):
+            HOST = 'chomskyqna.azurewebsites.net'
+            # api-endpoint
+            URL = '/qnamaker/knowledgebases/xxx/generateAnswer'
+
+            question = {'question': text, 'top': 3}
+            # defining a params dict for the parameters to be sent to the API
+            headers = {"Authorization": "",
+                       "Content-type": "application/json"}
+            try:
+                conn = http.client.HTTPSConnection(HOST)
+                print("sent request")
+                json_data = json.dumps(question)
+                conn.request("POST", URL, json_data, headers)
+                print("sent request")
+                response = conn.getresponse()
+                headers = response.getheaders()
+                print(headers)
+                print("got response")
+                answer = json.loads(response.read().decode())
+                return analyzeResponse(answer)
+
+            except Exception as e:
+                print(e)
+
+            except:
+                print ("Unexpected error:", sys.exc_info()[0])
+                print ("Unexpected error:", sys.exc_info()[1])
+
+        def analyzeIntent(evt):
+            print("analyzing intent")
+            if evt.result.intent_json and evt.result.intent_json.top_scoring_intent.score > .50:
+                #found it in the model we have, so ...
+                print("will call qnamaker")
+
+
+        def processText(evt):
+            print("RECOGNIZED: {}\n\tText: {} (Reason: {})\n\tIntent Id: {}\n\tIntent JSON: {}".format(
+                evt, evt.result.text, evt.result.reason, evt.result.intent_id, evt.result.intent_json))
+            if evt.result.text in [None, '']:
+                print('no text')
+                return
+            #analyzeIntent(evt)
+            print("text{}".format(evt.result.text))
+            answer = getResponse(evt.result.text)
+            #send prepareTTSpeech(answer)
+
         # make a stream from the listening port and pass as AudioConfig into recognizer
         class StreamingAudioCallback(speechsdk.audio.PullAudioInputStreamCallback):
             """Example class that implements the Pull Audio Stream interface to recognize speech from
@@ -78,21 +141,12 @@ def select():
                 print((RATE / CHUNK) * RECORD_SECONDS)
 
             def read(self, buffer: memoryview) -> int:
-                print("get audio stream chunk")
                 #frames = bytearray
                 for i in range(0, (RATE // CHUNK * RECORD_SECONDS)):
                     data = self.audio_stream.read(CHUNK)
                     buffer[:len(data)] = data
 
                     return len(data)
-
-                #global frames
-                #frames = frames + bytearray(data)
-
-                # I think python does an internal write to push audio frames into speechSDK stream, something like this
-                #push_stream.write(frames)
-
-
 
             def close(self):
                 """close callback function"""
@@ -155,9 +209,8 @@ def select():
                 # event for intermediate results
                 intent_recognizer.recognizing.connect(lambda evt: print("RECOGNIZING: {}".format(evt)))
                 # event for final result
-                intent_recognizer.recognized.connect(lambda evt: print(
-                    "RECOGNIZED: {}\n\tText: {} (Reason: {})\n\tIntent Id: {}\n\tIntent JSON: {}".format(
-                        evt, evt.result.text, evt.result.reason, evt.result.intent_id, evt.result.intent_json)))
+                intent_recognizer.recognized.connect(lambda evt: processText(evt))
+                # make a call back to then send text to QnAMaker for response
 
                 intent_recognizer.canceled.connect(
                     lambda evt: print("CANCELED: {} ({})".format(evt.cancellation_details, evt.reason)))
@@ -165,8 +218,6 @@ def select():
                 # stop continuous recognition on session stopped, end of speech or canceled events
                 intent_recognizer.session_stopped.connect(stop_cb)
                 # intent_recognizer.speech_end_detected.connect(stop_cb)
-
-                intent_recognizer.canceled.connect(stop_cb)
 
                 #  RUN the intent recognizer. The output of the callbacks should be printed to the console.
                 intent_recognizer.start_continuous_recognition()
