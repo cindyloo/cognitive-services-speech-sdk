@@ -8,7 +8,7 @@ import intent_sample
 import platform
 
 import pyaudio
-from dotenv import load_dotenv
+
 
 import http.client, urllib.parse, json, time, sys
 import os
@@ -21,19 +21,24 @@ RATE = 16000
 RECORD_SECONDS = 20
 
 
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
-#LU_INTENT_KEY = os.getenv("LuisAppId")
-#LU_SERVICE_REGION = os.getenv("LuisAPIHostName")
-#LU_APP_ID = os.getenv("LuisAPIKey")
+load_dotenv(find_dotenv())
+
+LU_APP_ID = os.getenv("LuisAppId")
+LU_API_KEY = os.getenv("LuisAPIKey")
+LU_SERVICE_REGION = "eastus" #os.getenv("LuisAPIHostName")
+
+
+QNA_HOST = os.getenv("QnAEndpointHostName")
+QNA_ID = os.getenv("QnAKnowledgebaseId")
+QNA_ENDPOINT = os.getenv("QnAEndpointKey")
+
 
 speech_intent_key = os.getenv("SpeechServiceKey")
 speech_intent_service_region =os.getenv("SpeechRegion")
 speech_language_understanding_app_id = ""
 
-lu_intent_key = ""
-lu_intent_service_region = "eastus"
-lu_language_understanding_app_id = ""
 # Specify the path to a audio file containing speech (mono WAV / PCM with a sampling rate of 16
 # kHz).
 
@@ -78,23 +83,19 @@ def select():
             return "test answer"
 
         def getResponse(text):
-            HOST = 'chomskyqna.azurewebsites.net'
             # api-endpoint
-            URL = '/qnamaker/knowledgebases/xxx/generateAnswer'
-
+            URL = '/qnamaker/knowledgebases/' + QNA_ID + '/generateAnswer'
+            print(QNA_ID)
             question = {'question': text, 'top': 3}
             # defining a params dict for the parameters to be sent to the API
-            headers = {"Authorization": "",
+            headers = {"Authorization": "EndpointKey " + QNA_ENDPOINT,
                        "Content-type": "application/json"}
             try:
-                conn = http.client.HTTPSConnection(HOST)
-                print("sent request")
+                conn = http.client.HTTPSConnection(QNA_HOST)
+                print("send request")
                 json_data = json.dumps(question)
                 conn.request("POST", URL, json_data, headers)
-                print("sent request")
                 response = conn.getresponse()
-                headers = response.getheaders()
-                print(headers)
                 print("got response")
                 answer = json.loads(response.read().decode())
                 return analyzeResponse(answer)
@@ -167,7 +168,6 @@ def select():
             """callback that stops continuous recognition upon receiving an event `evt`"""
             print('CLOSING on {}'.format(evt))
             intent_recognizer.stop_continuous_recognition()
-            nonlocal done
             done = True
 
         def test_for_user_end(done):
@@ -182,14 +182,14 @@ def select():
 
         audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
         # step 1: transcribe audio
-
-        intent_config = speechsdk.SpeechConfig(subscription=lu_intent_key, region=lu_intent_service_region)
+        print("set up speech keys")
+        intent_config = speechsdk.SpeechConfig(subscription=LU_API_KEY, region="eastus")
         intent_recognizer = speechsdk.intent.IntentRecognizer(speech_config=intent_config, audio_config=audio_config)
 
-
+        print("set up model")
         # set up the intents that are to be recognized. These can be a mix of simple phrases and
         # intents specified through a LanguageUnderstanding Model.
-        model = speechsdk.intent.LanguageUnderstandingModel(app_id=lu_language_understanding_app_id)
+        model = speechsdk.intent.LanguageUnderstandingModel(app_id=LU_APP_ID)
         intents = [
             (model, "greeting"),
             (model, "identification"),
