@@ -8,7 +8,7 @@ import intent_sample
 import platform
 
 import pyaudio
-
+from TTSChomsky import TextToSpeech
 
 import http.client, urllib.parse, json, time, sys
 import os
@@ -35,9 +35,9 @@ QNA_ID = os.getenv("QnAKnowledgebaseId")
 QNA_ENDPOINT = os.getenv("QnAEndpointKey")
 
 
-speech_intent_key = os.getenv("SpeechServiceKey")
+SPEECH_KEY = os.getenv("SpeechServiceKey")
 speech_intent_service_region =os.getenv("SpeechRegion")
-speech_language_understanding_app_id = ""
+
 
 # Specify the path to a audio file containing speech (mono WAV / PCM with a sampling rate of 16
 # kHz).
@@ -70,9 +70,13 @@ def select():
     try:
         intent_recognizer = {}
 
-        def analyzeResponse(answers):
-            print("Response")
+        def getVoiceAnswerFromText(answerText):
+            print("get voice response")
+            app = TextToSpeech(SPEECH_KEY)
+            app.get_token()
+            app.fetch_and_save_audio(answerText) #write audioResponse as file for now
 
+        def analyzeResponse(answers):
             possible_answers = []
             for a in answers['answers']:
                 possible_answers.append(a['answer'])
@@ -80,7 +84,8 @@ def select():
                 #found it in the model we have, so ...
                 print(p)
             # select top or random?
-            return "test answer"
+            print("top answer {}".format(possible_answers[0]))
+            return possible_answers[0]
 
         def getResponse(text):
             # api-endpoint
@@ -124,6 +129,7 @@ def select():
             print("text{}".format(evt.result.text))
             answer = getResponse(evt.result.text)
             #send prepareTTSpeech(answer)
+            getVoiceAnswerFromText(answer)
 
         # make a stream from the listening port and pass as AudioConfig into recognizer
         class StreamingAudioCallback(speechsdk.audio.PullAudioInputStreamCallback):

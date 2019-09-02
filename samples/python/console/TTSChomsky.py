@@ -5,25 +5,12 @@ directory with this command: python TTSSample.py
 import os, requests, time
 from xml.etree import ElementTree
 
-# This code is required for Python 2.7
-try: input = raw_input
-except NameError: pass
-
-'''
-If you prefer, you can hardcode your subscription key as a string and remove
-the provided conditional statement. However, we do recommend using environment
-variables to secure your subscription keys. The environment variable is
-set to SPEECH_SERVICE_KEY in our sample.
-
-For example:
-subscription_key = "Your-Key-Goes-Here"
-'''
-
+SPEECH_DEP_ID =os.getenv("SpeechDeploymentId")
 
 class TextToSpeech(object):
     def __init__(self, subscription_key):
         self.subscription_key = subscription_key
-        self.tts = input("What would you like to convert to speech: ")
+        self.tts = ""
         self.timestr = time.strftime("%Y%m%d-%H%M")
         self.access_token = None
 
@@ -39,9 +26,10 @@ class TextToSpeech(object):
         response = requests.post(fetch_token_url, headers=headers)
         self.access_token = str(response.text)
 
-    def save_audio(self):
-
-        constructed_url = "https://eastus.voice.speech.microsoft.com/cognitiveservices/v1?deploymentId=0d6cf2e3-814a-49b6-921a-f8088d98f93a"
+    def fetch_and_save_audio(self, audioText):
+        print("in fetch and save {}".format(audioText))
+        self.tts = audioText
+        constructed_url = "https://eastus.voice.speech.microsoft.com/cognitiveservices/v1?deploymentId=" + SPEECH_DEP_ID
         headers = {
             'Authorization': 'Bearer ' + self.access_token,
             'Content-Type': 'application/ssml+xml',
@@ -64,8 +52,3 @@ class TextToSpeech(object):
         else:
             print("\nStatus code: " + str(response.status_code) + "\nSomething went wrong. Check your subscription key and headers.\n")
 
-if __name__ == "__main__":
-    subscription_key = "1ea5ab6891654c78b6d5a40aade2864e"
-    app = TextToSpeech(subscription_key)
-    app.get_token()
-    app.save_audio()
