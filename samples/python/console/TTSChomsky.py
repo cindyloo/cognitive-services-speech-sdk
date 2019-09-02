@@ -2,8 +2,23 @@
 After you've set your subscription key, run this application from your working
 directory with this command: python TTSSample.py
 '''
+
 import os, requests, time
-from xml.etree import ElementTree
+from settings import *
+
+
+
+try:
+    import azure.cognitiveservices.speech as speechsdk
+except ImportError:
+    print("""
+    Importing the Speech SDK for Python failed.
+    Refer to
+    https://docs.microsoft.com/azure/cognitive-services/speech-service/quickstart-python for
+    installation instructions.
+    """)
+    import sys
+    sys.exit(1)
 
 SPEECH_DEP_ID =os.getenv("SpeechDeploymentId")
 
@@ -45,10 +60,22 @@ class TextToSpeech(object):
         to file in your working directory. It is prefaced by sample and
         includes the date.
         '''
-        if response.status_code == 200:
-            with open('sample-' + self.timestr + '.wav', 'wb') as audio:
-                audio.write(response.content)
-                print("\nStatus code: " + str(response.status_code) + "\nYour TTS is ready for playback.\n")
-        else:
-            print("\nStatus code: " + str(response.status_code) + "\nSomething went wrong. Check your subscription key and headers.\n")
 
+        #HOST = ''  # to whomever is listening
+        #PORT = 50007  # Arbitrary non-privileged port
+        #s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        frames = bytearray
+        p = pyaudio.PyAudio()
+        print("about to stream")
+        if response.status_code == 200:
+            stream = p.open(format=FORMAT,
+                        channels=CHANNELS,
+                        rate=32000,
+                        output=True,
+                        frames_per_buffer=CHUNK)
+
+            for i in range(0, (RATE // CHUNK * RECORD_SECONDS)):
+                data = stream.write(response.content)
+                #frames.append(data)
+                    #client_socket.sendall(data)

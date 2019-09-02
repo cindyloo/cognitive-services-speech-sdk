@@ -7,40 +7,12 @@
 import intent_sample
 import platform
 
-import pyaudio
+
 from TTSChomsky import TextToSpeech
 
-import http.client, urllib.parse, json, time, sys
+import http.client, json, time
 import os
-
-#record
-CHUNK = 1024
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-RATE = 16000
-RECORD_SECONDS = 20
-
-
-from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv())
-
-LU_APP_ID = os.getenv("LuisAppId")
-LU_API_KEY = os.getenv("LuisAPIKey")
-LU_SERVICE_REGION = "eastus" #os.getenv("LuisAPIHostName")
-
-
-QNA_HOST = os.getenv("QnAEndpointHostName")
-QNA_ID = os.getenv("QnAKnowledgebaseId")
-QNA_ENDPOINT = os.getenv("QnAEndpointKey")
-
-
-SPEECH_KEY = os.getenv("SpeechServiceKey")
-speech_intent_service_region =os.getenv("SpeechRegion")
-
-
-# Specify the path to a audio file containing speech (mono WAV / PCM with a sampling rate of 16
-# kHz).
+from settings import *
 
 
 try:
@@ -57,14 +29,8 @@ except ImportError:
 
 eofkey = 'Ctrl-Z' if "Windows" == platform.system() else 'Ctrl-D'
 
-intent_samples = [
-        intent_sample.recognize_intent_once_from_mic,
-        intent_sample.recognize_intent_once_async_from_mic,
-        intent_sample.recognize_intent_continuous
-]
 
-
-def select():
+def listen_and_process():
     p = pyaudio.PyAudio()
 
     try:
@@ -75,8 +41,10 @@ def select():
             app = TextToSpeech(SPEECH_KEY)
             app.get_token()
             app.fetch_and_save_audio(answerText) #write audioResponse as file for now
+            # we can open an output stream and send it out to whomever is listening alos
 
-        def analyzeResponse(answers):
+
+        def analyzeTextResponse(answers):
             possible_answers = []
             for a in answers['answers']:
                 possible_answers.append(a['answer'])
@@ -87,7 +55,7 @@ def select():
             print("top answer {}".format(possible_answers[0]))
             return possible_answers[0]
 
-        def getResponse(text):
+        def getTextResponse(text):
             # api-endpoint
             URL = '/qnamaker/knowledgebases/' + QNA_ID + '/generateAnswer'
             print(QNA_ID)
@@ -103,7 +71,7 @@ def select():
                 response = conn.getresponse()
                 print("got response")
                 answer = json.loads(response.read().decode())
-                return analyzeResponse(answer)
+                return analyzeTextResponse(answer)
 
             except Exception as e:
                 print(e)
@@ -115,7 +83,7 @@ def select():
         def analyzeIntent(evt):
             print("analyzing intent")
             if evt.result.intent_json and evt.result.intent_json.top_scoring_intent.score > .50:
-                #found it in the model we have, so ...
+                #do some logic on the intent
                 print("will call qnamaker")
 
 
@@ -127,8 +95,9 @@ def select():
                 return
             #analyzeIntent(evt)
             print("text{}".format(evt.result.text))
-            answer = getResponse(evt.result.text)
-            #send prepareTTSpeech(answer)
+            # step 3, get text answer
+            answer = getTextResponse(evt.result.text)
+            #step 4, send back audio answer - as file or stream
             getVoiceAnswerFromText(answer)
 
         # make a stream from the listening port and pass as AudioConfig into recognizer
@@ -162,12 +131,8 @@ def select():
 
         # setup the audio stream
         wave_format = speechsdk.audio.AudioStreamFormat(samples_per_second=16000, bits_per_sample=16, channels=1)
-
         callback = StreamingAudioCallback()
         push_stream = speechsdk.audio.PullAudioInputStream(callback, wave_format)
-        # setup the audio stream
-        #push_stream = speechsdk.audio.PushAudioInputStream()
-
 
         done = False
         def stop_cb(evt):
@@ -185,9 +150,8 @@ def select():
             return
 
 
-
         audio_config = speechsdk.audio.AudioConfig(stream=push_stream)
-        # step 1: transcribe audio
+
         print("set up speech keys")
         intent_config = speechsdk.SpeechConfig(subscription=LU_API_KEY, region="eastus")
         intent_recognizer = speechsdk.intent.IntentRecognizer(speech_config=intent_config, audio_config=audio_config)
@@ -205,7 +169,7 @@ def select():
         intent_recognizer.add_intents(intents)
 
 # cancellation event
-
+        # step 1: listen and transcribe audio
         while not done:
             try:
 
@@ -214,7 +178,7 @@ def select():
                 intent_recognizer.speech_end_detected.connect(lambda evt: print("SPEECH_END_DETECTED: {}".format(evt)))
                 # event for intermediate results
                 intent_recognizer.recognizing.connect(lambda evt: print("RECOGNIZING: {}".format(evt)))
-                # event for final result
+                # step 2: take recognized text and send it on to process
                 intent_recognizer.recognized.connect(lambda evt: processText(evt))
                 # make a call back to then send text to QnAMaker for response
 
@@ -260,6 +224,6 @@ def select():
 
 while True:
     try:
-        select()
+        listen_and_process()
     except EOFError:
         break
