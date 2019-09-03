@@ -95,9 +95,9 @@ def listen_and_process():
                 return
             #analyzeIntent(evt)
             print("text{}".format(evt.result.text))
-            # step 3, get text answer
+            # STEP 3, get text answer from logic/QnA/BERT
             answer = getTextResponse(evt.result.text)
-            #step 4, send back audio answer - as file or stream
+            # STEP 4, send back audio answer - as file or stream
             getVoiceAnswerFromText(answer)
 
         # make a stream from the listening port and pass as AudioConfig into recognizer
@@ -168,8 +168,7 @@ def listen_and_process():
         ]
         intent_recognizer.add_intents(intents)
 
-# cancellation event
-        # step 1: listen and transcribe audio
+        # STEP 1: listen and transcribe audio
         while not done:
             try:
 
@@ -178,7 +177,7 @@ def listen_and_process():
                 intent_recognizer.speech_end_detected.connect(lambda evt: print("SPEECH_END_DETECTED: {}".format(evt)))
                 # event for intermediate results
                 intent_recognizer.recognizing.connect(lambda evt: print("RECOGNIZING: {}".format(evt)))
-                # step 2: take recognized text and send it on to process
+                # STEP 2: take recognized text and send it on to process
                 intent_recognizer.recognized.connect(lambda evt: processText(evt))
                 # make a call back to then send text to QnAMaker for response
 
@@ -201,21 +200,6 @@ def listen_and_process():
                 print(e)
                 break
 
-
-        # STEP by STEP (step 3: receive answer, step 4: text to speech)
-
-
-
-
-
-        # we will receive the threshold, and the text transcription
-        # now run logic to send to Bot (QnAmaker or BERT)
-        #dummy_response_results = question_results # TODO, change when BOT gives us a response
-        #response_results = generate_response(dummy_response_results)
-        #app = TextToSpeech(subscription_key, response_results.input_json)
-        # send back to client in stream.write()
-        #app.get_token()
-        #app.save_audio()
 
     except Exception as e:
         print('Error running sample: {}'.format(e))

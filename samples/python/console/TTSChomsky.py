@@ -71,11 +71,11 @@ class TextToSpeech(object):
         if response.status_code == 200:
             stream = p.open(format=FORMAT,
                         channels=CHANNELS,
-                        rate=32000,
+                        rate=28000,
                         output=True,
                         frames_per_buffer=CHUNK)
 
-            for i in range(0, (RATE // CHUNK * RECORD_SECONDS)):
+            while stream.is_active():
                 data = stream.write(response.content)
                 #frames.append(data)
                     #client_socket.sendall(data)
