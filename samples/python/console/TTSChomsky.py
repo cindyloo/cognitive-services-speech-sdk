@@ -28,6 +28,8 @@ class TextToSpeech(object):
         self.tts = ""
         self.timestr = time.strftime("%Y%m%d-%H%M")
         self.access_token = None
+        self.response ={}
+        self.p = pyaudio.PyAudio()
 
     '''
     The TTS endpoint requires an access token. This method exchanges your
@@ -38,11 +40,11 @@ class TextToSpeech(object):
         headers = {
             'Ocp-Apim-Subscription-Key': self.subscription_key
         }
-        response = requests.post(fetch_token_url, headers=headers)
-        self.access_token = str(response.text)
+        self.response = requests.post(fetch_token_url, headers=headers)
+        self.access_token = str(self.response.text)
+
 
     def fetch_and_save_audio(self, audioText):
-        print("in fetch and save {}".format(audioText))
         self.tts = audioText
         constructed_url = "https://eastus.voice.speech.microsoft.com/cognitiveservices/v1?deploymentId=" + SPEECH_DEP_ID
         headers = {
@@ -61,21 +63,23 @@ class TextToSpeech(object):
         includes the date.
         '''
 
-        #HOST = ''  # to whomever is listening
-        #PORT = 50007  # Arbitrary non-privileged port
-        #s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         frames = bytearray
-        p = pyaudio.PyAudio()
-        print("about to stream")
+
+        # define callback (2)
+
+
+
+        print("now streaming response in Chomsky voice")
         if response.status_code == 200:
-            stream = p.open(format=FORMAT,
+            stream = self.p.open(format=FORMAT,
                         channels=CHANNELS,
                         rate=28000,
                         output=True,
                         frames_per_buffer=CHUNK)
 
-            while stream.is_active():
-                data = stream.write(response.content)
-                #frames.append(data)
-                    #client_socket.sendall(data)
+            stream.write(response.content)
+            stream.stop_stream()
+            stream.close()
+            time(2)
+
+                #client_socket.sendall(data)

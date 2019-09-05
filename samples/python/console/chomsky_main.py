@@ -30,46 +30,47 @@ except ImportError:
 eofkey = 'Ctrl-Z' if "Windows" == platform.system() else 'Ctrl-D'
 
 
+
 def listen_and_process():
     p = pyaudio.PyAudio()
 
+
     try:
         intent_recognizer = {}
+        listen_mode = True
 
         def getVoiceAnswerFromText(answerText):
-            print("get voice response")
+            print("getting voice response")
             app = TextToSpeech(SPEECH_KEY)
             app.get_token()
             app.fetch_and_save_audio(answerText) #write audioResponse as file for now
-            # we can open an output stream and send it out to whomever is listening alos
+            # WE need to stop listening during the response b/c guess why - chomsky listens to chomsky output!
 
 
         def analyzeTextResponse(answers):
             possible_answers = []
             for a in answers['answers']:
-                possible_answers.append(a['answer'])
+                possible_answers.append({ 'answer': a['answer'], 'score' : a['score']}) # we need the score too
+            print("\n\nTOP 3 QNA Responses")
             for p in possible_answers:
                 #found it in the model we have, so ...
-                print(p)
+                print(p['answer'])
             # select top or random?
-            print("top answer {}".format(possible_answers[0]))
-            return possible_answers[0]
+            print("\n\nTOP QNA ANSWER {}".format(possible_answers[0]))
+            return possible_answers[0]['answer']
 
-        def getTextResponse(text):
+        def getQNATextResponse(text):
             # api-endpoint
             URL = '/qnamaker/knowledgebases/' + QNA_ID + '/generateAnswer'
-            print(QNA_ID)
             question = {'question': text, 'top': 3}
             # defining a params dict for the parameters to be sent to the API
             headers = {"Authorization": "EndpointKey " + QNA_ENDPOINT,
                        "Content-type": "application/json"}
             try:
                 conn = http.client.HTTPSConnection(QNA_HOST)
-                print("send request")
                 json_data = json.dumps(question)
                 conn.request("POST", URL, json_data, headers)
                 response = conn.getresponse()
-                print("got response")
                 answer = json.loads(response.read().decode())
                 return analyzeTextResponse(answer)
 
@@ -80,12 +81,24 @@ def listen_and_process():
                 print ("Unexpected error:", sys.exc_info()[0])
                 print ("Unexpected error:", sys.exc_info()[1])
 
-        def analyzeIntent(evt):
-            print("analyzing intent")
-            if evt.result.intent_json and evt.result.intent_json.top_scoring_intent.score > .50:
+        def grabIntent(evt):
+            print("intent")
+            #if evt.result.intent_json: #and evt.result.intent_json.top_scoring_intent.score > .50:
                 #do some logic on the intent
-                print("will call qnamaker")
+            info = json.loads(evt.result.intent_json)['topScoringIntent']
+            print("TOP LUIS INTENT {} score {}".format(info['intent'], info['score']))
+            return ({"intent": info['intent'], "score": info['score']})
 
+        def evaluateScores(luis, qna):
+            print('evaluation:: ')
+            if (luis['intent'] == 'identification_request'): # and score is high, maybe answer and go to dialog
+                print('identification request from LUIS')
+            elif (luis['score'] <= .50):
+                print('low luis score')
+            elif (qna['score'] <= 45):
+                print('low qna score')
+            print("dispatch to BERT TBD")
+            #dispatch or something depending on scores
 
         def processText(evt):
             print("RECOGNIZED: {}\n\tText: {} (Reason: {})\n\tIntent Id: {}\n\tIntent JSON: {}".format(
@@ -93,12 +106,16 @@ def listen_and_process():
             if evt.result.text in [None, '']:
                 print('no text')
                 return
-            #analyzeIntent(evt)
-            print("text{}".format(evt.result.text))
-            # STEP 3, get text answer from logic/QnA/BERT
-            answer = getTextResponse(evt.result.text)
-            # STEP 4, send back audio answer - as file or stream
-            getVoiceAnswerFromText(answer)
+
+            LUIS_score = grabIntent(evt)
+            # STEP 3, send to QnA
+            QNA_answer = getQNATextResponse(evt.result.text)
+            # STEP 4 evaluate LUIS_score and QNA_score to determine if we send to BERT or dispatch to dialog flow
+            evaluateScores(LUIS_score, QNA_answer)
+
+
+            getVoiceAnswerFromText(QNA_answer)
+            time.sleep(1)
 
         # make a stream from the listening port and pass as AudioConfig into recognizer
         class StreamingAudioCallback(speechsdk.audio.PullAudioInputStreamCallback):
@@ -189,11 +206,12 @@ def listen_and_process():
                 # intent_recognizer.speech_end_detected.connect(stop_cb)
 
                 #  RUN the intent recognizer. The output of the callbacks should be printed to the console.
+
+                print("start listening")
                 intent_recognizer.start_continuous_recognition()
 
 
                 print("test for done")
-
                 test_for_user_end(done)
 
             except Exception as e:
