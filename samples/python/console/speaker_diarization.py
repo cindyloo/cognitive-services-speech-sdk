@@ -14,18 +14,19 @@ def transcribe_file_with_diarization(file_path):
     # Transcribe the given audio file synchronously with diarization.
     # [START speech_transcribe_diarization_beta]
 
-    my_mic = sr.Microphone()
-    with my_mic as source:
-        audio = r.listen(source)
+    #my_mic = sr.Microphone()
+    #with my_mic as source:
+    #    audio = r.listen(source)
     client = speech.SpeechClient()
     speech_file = file_path #sys.argv[1]
-    #with open(speech_file, 'rb') as audio_file:
-    #    content = audio_file.read()
+    with open(speech_file, 'rb') as audio_file:
+        content = audio_file.read()
 
-    audio = speech.types.RecognitionAudio(content=bytes(audio.frame_data))
+   # audio = speech.types.RecognitionAudio(content=bytes(audio.frame_data))
+    audio = speech.types.RecognitionAudio(content=bytes(content))
     config = speech.types.RecognitionConfig(
         encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=44100,
+        sample_rate_hertz=16000,
         language_code='en-US',
         enable_speaker_diarization=True,
         enable_automatic_punctuation=True,
@@ -56,5 +57,5 @@ def transcribe_file_with_diarization(file_path):
     print("speaker4: '{}'".format(speaker4_transcript))
 
 # [END speech_transcribe_diarization_beta]
-speech_file = "sample-20200410-1039.wav"
+speech_file = "audience-20200415-1603.wav"
 transcribe_file_with_diarization(speech_file)

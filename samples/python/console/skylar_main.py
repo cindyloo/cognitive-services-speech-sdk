@@ -46,18 +46,20 @@ def get_voice_prompt(prompt):
     # WE need to stop listening during the response b/c guess why - chomsky listens to chomsky output!
     # return something like True, "speaking", audioFile
 
-def speaker_diarization_setup(psCallback):
+def speaker_diarization_setup(frame_data):
+    print("diarization")
     bytes_from_stream = []
 
     r = sr.Recognizer()
-    frame_data = psCallback.get_data_copy();
-    audio = r.listen(frame_data)
+    #what form works?
+    audio = bytes(b''.join(frame_data))
+
     client = speech.SpeechClient()
 
     if audio not in [None]:
         audio = speech.types.RecognitionAudio(content=audio)
         config = speech.types.RecognitionConfig(
-            encoding=FORMAT,
+            encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
             sample_rate_hertz=RATE,
             language_code='en-US',
             enable_speaker_diarization=True,
@@ -72,6 +74,21 @@ def speaker_diarization_setup(psCallback):
         if len(response.results) > 0:
             result = response.results[-1]
             words_info = result.alternatives[0].words
+            speaker1_transcript = ""
+            speaker2_transcript = ""
+            speaker3_transcript = ""
+            speaker4_transcript = ""
+            # Printing out the output:
+            for word_info in words_info:
+                if (word_info.speaker_tag == 1): speaker1_transcript = speaker1_transcript + word_info.word + ' '
+                if (word_info.speaker_tag == 2): speaker2_transcript = speaker2_transcript + word_info.word + ' '
+                if (word_info.speaker_tag == 3): speaker3_transcript = speaker3_transcript + word_info.word + ' '
+                if (word_info.speaker_tag == 4): speaker4_transcript = speaker4_transcript + word_info.word + ' '
+
+            print("speaker1: '{}'".format(speaker1_transcript))
+            print("speaker2: '{}'".format(speaker2_transcript))
+            print("speaker3: '{}'".format(speaker3_transcript))
+            print("speaker4: '{}'".format(speaker4_transcript))
 
 def listen_and_process(command_responses):
     p = pyaudio.PyAudio()
@@ -266,21 +283,20 @@ def listen_and_process(command_responses):
            # response = input()
             print("test for command or intent")
 
-            wf = wave.open('audience-' + time.strftime("%Y%m%d-%H%M") + '.wav', 'wb')
-            out_stream = p.open(
-                format=FORMAT,
-                channels=CHANNELS,
-                rate=RATE,
-                input=True,
-                frames_per_buffer=CHUNK)
-
-            wf.setnchannels(CHANNELS)
-            wf.setsampwidth(p.get_sample_size(FORMAT))
-            wf.setframerate(RATE)
-            wf.writeframes(b''.join(callback.frames))
-
-
             retval = user_command_response or user_intent_response
+
+            #don't save if a command.. append file?
+            if retval != user_command_response:
+                speaker_diarization_setup(callback.frames)
+            #save audio file for diarization
+                wf = wave.open('audience-' + time.strftime("%Y%m%d-%H%M") + '.wav', 'wb')
+                wf.setnchannels(CHANNELS)
+                wf.setsampwidth(p.get_sample_size(FORMAT))
+                wf.setframerate(RATE)
+                wf.writeframes(b''.join(callback.frames))
+
+
+
 
 
             return retval, user_command_response or user_intent_response, translation
