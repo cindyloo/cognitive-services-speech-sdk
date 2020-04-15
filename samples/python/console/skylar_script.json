@@ -1,0 +1,81 @@
+{
+  "introduction": {
+        "introductionPrompts": [
+        "ready",
+        "Here's what to expect tonight. We’ll be together about half an hour. ",
+        "We're going to have some drinks, spend a bit of time together, and we're going to explore bias.",
+        "It's a bit uncomfortable I know. But we’re here because we're open-minded, and keen, and earnest. ",
+        "Even me. I'm so god damn woke I confronted my own algorithm for being too binary. ",
+        "... my attempt at humor.. give me a pass I'm just learning",
+        "it's important to understand that this is deep. Deep, raw and challenging.",
+        "But it's also heart-expanding work. It begins with being honest about ourselves, being educated and becoming more conscious of what is going on.",
+        "If you're willing to do that then get comfortable. "
+        ],
+        "instructionPrompts": [
+          "I'll be listening to you throughout but I'm just an AI so I'm going to have to ask you to talk to me in a certain way. ",
+          "To move on to the next scene just ask!",
+          "Say Skyler, move on please? Or just Skyler, next please.",
+          "OK? so if everyone is ready, please ask me to proceed"
+        ],
+        "icebreakerPrompts": [
+          "great! so we will begin with a few Icebreaker questions to get to know each other",
+          "tell me if you could be any animal what would it be?",
+          "who's your best friend? Tell me about them and why you chose them as your best friend.",
+          "Who's the cleverest person you know?",
+          " Who would you most like to meet?",
+          "how good are you? What's the nicest thing you've ever done?"
+        ],
+        "navPrompts": {
+          "proceedPrompts": [
+            "to move on, say Skyler, next please",
+            "I'm sorry this is annoying, but really, to get any further you have say it.  Skyler, move on please"
+          ],
+          "pausePrompt": "If you need to take a stop for any reason say 'Skyler, let’s pause'. And then to pick up again say 'Skyler let’s continue'"
+        }
+  },
+    "scene1": {
+    "instructionPrompts": [
+          "I'll be listening to you throughout but I’m just an AI so I’m going to have to ask you to talk to me in a certain way. ",
+          "To move on to the next scene just ask!",
+          "Say Skyler, move on please? Or just Skyler, next please."
+
+        ],
+         "navPrompts": {
+          "proceedPrompts": [
+            "to move on, say Skyler, next please",
+            "I'm sorry this is annoying, but really, to get any further you have say it.  Skyler, move on please"
+          ],
+          "pausePrompt": "If you need to take a stop for any reason say 'Skyler, let’s pause'. And then to pick up again say 'Skyler let’s continue'"
+        }
+  },
+  "scene2": {
+    "instructionPrompts": [
+          "I'll be listening to you throughout but I’m just an AI so I’m going to have to ask you to talk to me in a certain way. ",
+          "To move on to the next scene just ask!",
+          "Say Skyler, move on please? Or just Skyler, next please."
+
+        ],
+         "navPrompts": {
+          "proceedPrompts": [
+            "to move on, say Skyler, next please",
+            "I'm sorry this is annoying, but really, to get any further you have say it.  Skyler, move on please"
+          ],
+          "pausePrompt": "If you need to take a stop for any reason say 'Skyler, let’s pause'. And then to pick up again say 'Skyler let’s continue'"
+        }
+  },
+  "responses": [
+    "ok",
+    "yes"
+  ],
+  "commands": [
+    "ready",
+    "next",
+    "skylar next",
+    "skylar next please",
+    "please proceed",
+    "proceed",
+    "continue",
+    "wait",
+    "repeat"
+  ]
+}
