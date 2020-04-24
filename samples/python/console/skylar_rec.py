@@ -27,9 +27,11 @@ def speak(text):
     #just print for now
 
 
-def check_volume_and_pace():
+def check_volume_and_pace(recent_recording):
     # every 30 seconds capture audio file and analyze volume and pace
-    print("not yet evaluating volume and pacing")
+    print("now analyzing {}".format(recent_recording))
+    mysp.myspgend(recent_recording, c)  # mysp solution. w
+    mysp.mysptotal(recent_recording, c)
 
 # this is called from the background thread
 def callback(recognizer, audio):
@@ -47,18 +49,21 @@ def getResponse(responseFilename, commands):
     got_response = False
     while not got_response:
         try:
-            got_response, response, translation = listen_and_process(commands)
+            #analyze speech, return info and recorded audio response using Azure and Google
+            got_response, response, translation, recent_recording = listen_and_process(commands)
 
             if got_response:
                 # store response
                 print("analyzing what kind of response")
-                #could use the google recognizer here...
                 if response in commands:
                     print("got a command")
+                    #if next,
+                    #else if repeat
                     return
                 else:
                     print("got a response")
                     got_response = False
+                    check_volume_and_pace(recent_recording)
                     #store responses/ diarization?
         except EOFError:
             break
@@ -68,26 +73,12 @@ def getResponse(responseFilename, commands):
             with my_mic as source:
                 audio = r.listen(source)
 
-            transcription = r2.recognize_google(audio)
-            print("short term listener")
-            print(transcription)
-            for res in range(0,len(responses)):
-                if responses[res] in transcription:
-                    if responses[res] == "wait":
-                        timer.sleep(2)
-                    elif responses[res] == "repeat":
-                        return "repeat"
-                    else:
-                        no_response_yet = False
-                #return a prompt request?
-
             # determineIntent()
             # how fast slow/ loud/soft pauses
             # promptMode -keywords, phrases
             # per personality
             # storyMode
-            mysp.myspgend(responseFilename, c) #mysp solution. what else coudl I use to analyze pauses with audio info
-            mysp.mysptotal(responseFilename, c)
+            
         except sr.RequestError:
             # API was unreachable or unresponsive
             response["success"] = False
@@ -106,16 +97,20 @@ def set_baseline():
 
 def introduction(text, commands):
     #text to speech intro
-    for i in range(0,1): #len(text)):
-        speak(text[i])
-       # time.sleep(2)
-        #get response?
-    getResponse("introduction-response{}.wav",commands)
+    # handle a repeat command
+    repeat = True
+    while repeat:
+        for i in range(0,1): #len(text)):
+            speak(text[i])
+
+        command = getResponse("introduction-response{}.wav",commands)
+        if command and command not in ["repeat"]:
+            repeat = False
 
 def instructions(text,responses):
     for i in range(0, len(text)):
         speak(text[i])
-      #  time.sleep(2)
+    # handle a repeat command
     getResponse("instruction-response{}.wav",responses)
 
 def icebreaker(text,responses):

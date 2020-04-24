@@ -38,7 +38,7 @@ except ImportError:
 eofkey = 'Ctrl-Z' if "Windows" == platform.system() else 'Ctrl-D'
 
 
-def get_voice_prompt(prompt):
+def get_voice_prompt(prompt): #using MS Azure
     print("getting skylar voice prompt")
     app = TextToSpeech(SPEECH_KEY)
     app.get_token()
@@ -46,7 +46,7 @@ def get_voice_prompt(prompt):
     # WE need to stop listening during the response b/c guess why - chomsky listens to chomsky output!
     # return something like True, "speaking", audioFile
 
-def speaker_diarization_setup(frame_data):
+def speaker_diarization_setup(frame_data): #using Google speech
     print("diarization")
     bytes_from_stream = []
 
@@ -90,6 +90,8 @@ def speaker_diarization_setup(frame_data):
             print("speaker3: '{}'".format(speaker3_transcript))
             print("speaker4: '{}'".format(speaker4_transcript))
 
+#main process
+#start Azure STT recognizer and analyze responses
 def listen_and_process(command_responses):
     p = pyaudio.PyAudio()
     global done
@@ -108,19 +110,13 @@ def listen_and_process(command_responses):
         loop = asyncio.get_event_loop()
 
         def analyzeTextResponse(answers):
-            print("doing voice analysis")
+            print("no voice analysis yet")
             # audience said something (not a command)
              # analyze intent
+            # do something with intent?
 
-        """def getScriptedTextResponse(text, intent):
-            # api-endpoint
 
-            # so here we take the intent
-            # and try to infer if this is an answer or a direction
-            #analyzeTextResponses
-        """
-
-        #TODO grab from script. maybe add behavior per section?
+        #parse command and send back command
         def checkForCommands(res):
             if "wait" in res.lower():
                 timer.sleep(2)
@@ -131,6 +127,8 @@ def listen_and_process(command_responses):
             elif "repeat" in res.lower():
                 return True, "repeat"
             elif "quit" in res.lower():
+                return True, "quit"
+            elif "stop" in res.lower():
                 return True, "quit"
             else:
                 return False, ""
@@ -159,7 +157,7 @@ def listen_and_process(command_responses):
             print("script is responding to command")
             return
 
-        #callback for Recognized text
+        #callback for Recognized text #MS Azure
         def processText(evt):
             print("RECOGNIZED: {}\n\tText: {} (Reason: {})\n\tIntent Id: {}\n\tIntent JSON: {}".format(
                 evt, evt.result.text, evt.result.reason, evt.result.intent_id, evt.result.intent_json))
@@ -186,7 +184,7 @@ def listen_and_process(command_responses):
                 evaluateScores(LUIS_score, analyzed_answer)
             return
 
-        # make a stream from the listening port and pass as AudioConfig into recognizer
+        # make a stream from the listening port and pass as AudioConfig into recognizer  #MS Azure
         class StreamingAudioCallback(speechsdk.audio.PullAudioInputStreamCallback):
             """Example class that implements the Pull Audio Stream interface to recognize speech from
             an audio stream"""
@@ -203,16 +201,12 @@ def listen_and_process(command_responses):
 
                 print((RATE / CHUNK) * RECORD_SECONDS)
 
-
                 self.frames = []
                 self.numpydata = []
 
             def read(self, buffer: memoryview) -> int:
-
                     for i in range(0, RATE // CHUNK * RECORD_SECONDS):
                         data = self.audio_stream.read(CHUNK)
-                        #self.numpydata = numpy.frombuffer(data, dtype=np.int16)
-                        #self.outfile.write(numpydata)
                         self.frames.append(data)
                         buffer[:len(data)] = data
                         return len(data)
@@ -284,12 +278,12 @@ def listen_and_process(command_responses):
             print("test for command or intent")
 
             retval = user_command_response or user_intent_response
-
+            saved_recording_filename = 'audience-' + time.strftime("%Y%m%d-%H%M") + '.wav'
             #don't save if a command.. append file?
             if retval != user_command_response:
                 speaker_diarization_setup(callback.frames)
             #save audio file for diarization
-                wf = wave.open('audience-' + time.strftime("%Y%m%d-%H%M") + '.wav', 'wb')
+                wf = wave.open(saved_recording_filename, 'wb')
                 wf.setnchannels(CHANNELS)
                 wf.setsampwidth(p.get_sample_size(FORMAT))
                 wf.setframerate(RATE)
@@ -298,8 +292,8 @@ def listen_and_process(command_responses):
 
 
 
-
-            return retval, user_command_response or user_intent_response, translation
+            #return these values for additional processing. TODO somehting with user_intent_response
+            return retval, user_command_response or user_intent_response, translation, saved_recording_filename
 
         except Exception as e:
             print("Error ")

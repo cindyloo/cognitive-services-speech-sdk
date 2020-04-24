@@ -21,16 +21,15 @@ except ImportError:
 # Set up the subscription info for the Language Understanding Service: Note that this is not the
 # same subscription as the one for the Speech Service. Replace with your own language understanding
 # subscription key and service region (e.g., "westus").
-speech_intent_key = ""
-speech_intent_service_region = ""
+speech_key, service_region = "355ff30fbc394e64ba414523c2084110", "EastUS"
 speech_language_understanding_app_id = ""
 
-lu_intent_key = "275c1674cf9e484680a0e7500202abef"
+lu_intent_key = "9067f9ef349c4f90aa2f2fc9f23dd1e6"
 lu_intent_service_region = "eastus"
 lu_language_understanding_app_id = "8468f0ba-5923-4ad3-9285-9c9e57ff921c"
 # Specify the path to a audio file containing speech (mono WAV / PCM with a sampling rate of 16
 # kHz).
-
+weatherfilename = "sample-20190902-1405.wav"
 
 def recognize_intent_once_from_mic():
     """performs one-shot intent recognition from input from the default microphone"""
@@ -46,9 +45,9 @@ def recognize_intent_once_from_mic():
     # intents specified through a LanguageUnderstanding Model.
     model = speechsdk.intent.LanguageUnderstandingModel(app_id=lu_language_understanding_app_id)
     intents = [
-        (model, "greeting"),
-        (model, "identification"),
-        (model, "identification_request")
+        (model, "chitchat"),
+        (model, "complex"),
+        (model, "nature of intelligence")
     ]
     intent_recognizer.add_intents(intents)
 
@@ -73,6 +72,45 @@ def recognize_intent_once_from_mic():
             print("Error details: {}".format(intent_result.cancellation_details.error_details))
     # </IntentRecognitionOnceWithMic>
 
+
+def recognize_intent_once_from_file():
+    """performs one-shot speech recognition with input from an audio file"""
+    # <SpeechRecognitionWithFile>
+    speech_config = speechsdk.SpeechConfig(subscription=lu_intent_key, region=lu_intent_service_region)
+    audio_config = speechsdk.audio.AudioConfig(filename=weatherfilename)
+# Set up the intent recognizer
+    intent_recognizer = speechsdk.intent.IntentRecognizer(speech_config=speech_config, audio_config=audio_config)
+
+    # set up the intents that are to be recognized. These can be a mix of simple phrases and
+    # intents specified through a LanguageUnderstanding Model.
+    model = speechsdk.intent.LanguageUnderstandingModel(app_id=lu_language_understanding_app_id)
+    intents = [
+        (model, "chitchat"),
+        (model, "complex"),
+        (model, "nature of intelligence")
+    ]
+    intent_recognizer.add_intents(intents)
+
+    # Starts intent recognition, and returns after a single utterance is recognized. The end of a
+    # single utterance is determined by listening for silence at the end or until a maximum of 15
+    # seconds of audio is processed. It returns the recognition text as result.
+    # Note: Since recognize_once() returns only a single utterance, it is suitable only for single
+    # shot recognition like command or query.
+    # For long-running multi-utterance recognition, use start_continuous_recognition() instead.
+    intent_result = intent_recognizer.recognize_once()
+    print(intent_result)
+    # Check the results
+    if intent_result.reason == speechsdk.ResultReason.RecognizedIntent:
+        print("Recognized: \"{}\" with intent id `{}`".format(intent_result.text, intent_result.intent_id))
+    elif intent_result.reason == speechsdk.ResultReason.RecognizedSpeech:
+        print("Recognized: {}".format(intent_result.text))
+    elif intent_result.reason == speechsdk.ResultReason.NoMatch:
+        print("No speech could be recognized: {}".format(intent_result.no_match_details))
+    elif intent_result.reason == speechsdk.ResultReason.Canceled:
+        print("Intent recognition canceled: {}".format(intent_result.cancellation_details.reason))
+        if intent_result.cancellation_details.reason == speechsdk.CancellationReason.Error:
+            print("Error details: {}".format(intent_result.cancellation_details.error_details))
+    # </IntentRecognitionOnceWithMic>
 
 def recognize_intent_once_async_from_mic():
     """performs one-shot asynchronous intent recognition from input from the default microphone"""
@@ -103,7 +141,6 @@ def recognize_intent_once_async_from_mic():
         print("Intent recognition canceled: {}".format(result.cancellation_details.reason))
         if result.cancellation_details.reason == speechsdk.CancellationReason.Error:
             print("Error details: {}".format(result.cancellation_details.error_details))
-        nonlocal done
         done = True
 
     def recognizing_callback(evt):
@@ -120,10 +157,9 @@ def recognize_intent_once_async_from_mic():
     # intents specified through a LanguageUnderstanding Model.
     model = speechsdk.intent.LanguageUnderstandingModel(app_id=lu_language_understanding_app_id)
     intents = [
-        (model, "greeting"),
-        (model, "identification"),
-        (model, "identification_request"),
-        (model, "location_request")
+        (model, "chitchat"),
+        (model, "complex"),
+        (model, "nature of intelligence")
     ]
     intent_recognizer.add_intents(intents)
 
@@ -140,10 +176,11 @@ def recognize_intent_once_async_from_mic():
         time.sleep(5)
 
 
-def recognize_intent_continuous(audio_config):
+def recognize_intent_continuous(audio_config=None):
     """performs one-shot intent recognition from input from an audio file"""
     # <IntentContinuousRecognitionWithFile>
     intent_config = speechsdk.SpeechConfig(subscription=lu_intent_key, region=lu_intent_service_region)
+    audio_config = speechsdk.audio.AudioConfig(use_default_microphone=True)
 
     # Set up the intent recognizer
     intent_recognizer = speechsdk.intent.IntentRecognizer(speech_config=intent_config, audio_config=audio_config)
@@ -152,10 +189,10 @@ def recognize_intent_continuous(audio_config):
     # intents specified through a LanguageUnderstanding Model.
     model = speechsdk.intent.LanguageUnderstandingModel(app_id=lu_language_understanding_app_id)
     intents = [
-        (model, "greeting"),
-        (model, "identification"),
-        (model, "identification_request"),
-        (model, "location_request")
+        (model, "chitchat"),
+        (model, "complex"),
+        (model, "admin"),
+        (model, "nature of intelligence")
     ]
     intent_recognizer.add_intents(intents)
 
@@ -166,7 +203,6 @@ def recognize_intent_continuous(audio_config):
         """callback that stops continuous recognition upon receiving an event `evt`"""
         print('CLOSING on {}'.format(evt))
         intent_recognizer.stop_continuous_recognition()
-        nonlocal done
         done = True
 
     def test_for_user_end(done):
