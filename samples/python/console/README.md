@@ -1,7 +1,6 @@
-# Python console app
+# Python console app for various implementations
 
-This sample demonstrates various forms of speech recognition, intent recognition, and translation using the Speech SDK for Python.
-
+The code here creates a two different 'bot' forms. While I initially started with Azure, I've integrated some Google calls as well. This repo will eventually move. For the interim, here is the initial bot Chomsky and host Skylar code.
 ## Prerequisites
 
 * Python 3.5 or later needs to be installed. Downloads are available [here](https://www.python.org/downloads/).
@@ -49,10 +48,10 @@ To run the app, navigate to the `samples/python/console` directory in your local
 Start the app with the command
 
 ```sh
-python3 main.py
+python3 skylar_rec.py
 ```
 
-Depending on your platform, the Python 3 executable might also just be called `python`.
+Depending on your platform, the Python 3 executable might also just be called `python`. This will read the skylar_script.json and will advance only when requested (as specified in the script). Responses are analyzed by Azure LUIS and by Google speaker diarization. Myspsolution provides addition volume and rate info.
 
 The app displays a menu that you can navigate using your keyboard.
 Choose the scenarios that you're interested in.
