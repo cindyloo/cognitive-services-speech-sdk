@@ -24,7 +24,12 @@ The code here creates a two different 'bot' forms. While I initially started wit
 
 * Install the Speech SDK Python package in your Python interpreter, typically by executing the command
   ```sh
+  pip install pyaudio
   pip install azure-cognitiveservices-speech
+  pip install SpeechRecognition
+  you will also need to export GOOGLE_APPLICATION_CREDENTIALS. follow instructions TBA
+  pip install myspsolution
+  
   ```
   in a terminal.
 * [Download the sample code to your development PC.](../../README.md#get-the-samples)
